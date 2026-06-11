@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JAMILLA — Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;500&family=Karla:wght@300;400&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F2EDE3;          /* limestone */
+    --ink:#2E2A24;         /* walnut */
+    --grey:#8C8275;        /* driftwood */
+    --line:#DDD5C6;
+    --red:#9C3E2E;         /* deep terracotta red */
+    --ochre:#C8923B;
+    --olive:#6E6F4C;
+    --display:'Josefin Sans',sans-serif;
+    --body:'Karla',sans-serif;
+    --mono:'Space Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:300;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--red);color:var(--bg)}
+
+  /* ---------- Nav ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:26px clamp(20px,4vw,56px);
+  }
+  .wordmark{font-family:var(--display);font-size:19px;font-weight:500;letter-spacing:.32em;text-transform:uppercase}
+  .wordmark i{font-style:normal;color:var(--red)}
+  .menu{display:flex;gap:36px;font-family:var(--display);font-size:13px;letter-spacing:.22em;text-transform:uppercase}
+  .menu a{position:relative;opacity:.7;transition:opacity .3s;padding-bottom:6px}
+  .menu a:hover,.menu a:focus-visible{opacity:1}
+  .menu a::after{
+    content:"";position:absolute;left:0;bottom:0;width:0;height:2px;background:var(--red);transition:width .4s;
+  }
+  .menu a:hover::after{width:100%}
+
+  /* ---------- Hero ---------- */
+  #hero{position:relative;height:100vh;min-height:620px}
+  #scene{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:pan-y;cursor:pointer}
+  .hero-copy{
+    position:absolute;left:clamp(20px,4vw,56px);bottom:9vh;max-width:720px;pointer-events:none;
+  }
+  .hero-copy h1{
+    font-family:var(--display);font-weight:300;
+    font-size:clamp(36px,5.4vw,72px);line-height:1.15;letter-spacing:.02em;
+  }
+  .hero-copy h1 em{font-style:normal;color:var(--red)}
+  .hero-rule{width:120px;height:3px;background:var(--red);margin-bottom:26px}
+  .hero-meta{
+    position:absolute;right:clamp(20px,4vw,56px);bottom:9vh;text-align:right;
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--grey);line-height:2.1;
+  }
+  #stage-label{color:var(--red);transition:opacity .6s}
+  #stage-label.fading{opacity:0}
+  .scroll-hint{
+    position:absolute;left:50%;bottom:22px;transform:translateX(-50%);
+    font-family:var(--mono);font-size:10px;letter-spacing:.34em;color:var(--grey);
+    animation:bob 2.6s ease-in-out infinite;
+  }
+  @keyframes bob{50%{transform:translate(-50%,6px)}}
+
+  /* ---------- Sections ---------- */
+  section{padding:130px clamp(20px,4vw,56px)}
+  .eyebrow{
+    display:flex;align-items:center;gap:18px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--grey);margin-bottom:22px;
+  }
+  .eyebrow b{color:var(--red);font-weight:400}
+  .eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+  .reveal{opacity:0;transform:translateY(28px);transition:opacity .9s ease,transform .9s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  /* ---------- Project index ---------- */
+  .project{
+    display:grid;grid-template-columns:90px 1fr auto;gap:24px;align-items:baseline;
+    padding:32px 0;border-top:1px solid var(--line);cursor:pointer;
+    transition:padding-left .4s;position:relative;
+  }
+  .project:last-of-type{border-bottom:1px solid var(--line)}
+  .project::before{
+    content:"";position:absolute;left:0;top:-1px;width:0;height:3px;background:var(--red);transition:width .5s;
+  }
+  .project:hover{padding-left:20px}
+  .project:hover::before{width:90px}
+  .project .no{font-family:var(--mono);font-size:11px;color:var(--grey);letter-spacing:.15em}
+  .project h3{font-family:var(--display);font-size:clamp(22px,2.9vw,36px);font-weight:300;letter-spacing:.04em;transition:color .3s}
+  .project:hover h3{color:var(--red)}
+  .project .cat{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--grey);text-transform:uppercase}
+
+  #preview{
+    position:fixed;z-index:90;width:300px;aspect-ratio:4/3;pointer-events:none;
+    opacity:0;transform:scale(.94);transition:opacity .3s,transform .3s;overflow:hidden;
+    border:6px solid var(--bg);outline:1px solid var(--line);
+    box-shadow:0 18px 44px rgba(46,42,36,.22);
+  }
+  #preview img{width:100%;height:100%;object-fit:cover}
+  #preview.on{opacity:1;transform:scale(1)}
+
+  /* ---------- Studio ---------- */
+  #studio{display:grid;grid-template-columns:1fr 1.05fr;gap:70px;align-items:center}
+  #studio-canvas{width:100%;aspect-ratio:1;display:block}
+  #studio p{font-size:clamp(16.5px,1.55vw,20px);line-height:1.8;color:#56503f;margin-bottom:22px;max-width:540px}
+  .studio-stats{display:flex;gap:0;margin-top:38px;border-top:3px solid var(--ink);max-width:540px}
+  .studio-stats div{flex:1;padding:20px 0 0;border-right:1px solid var(--line)}
+  .studio-stats div:last-child{border-right:none}
+  .studio-stats span{display:block;font-family:var(--display);font-size:40px;font-weight:300}
+  .studio-stats small{font-family:var(--mono);font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--grey)}
+
+  /* ---------- Contact ---------- */
+  #contact a.big{
+    display:inline-block;font-family:var(--display);font-weight:300;
+    font-size:clamp(32px,5.6vw,74px);letter-spacing:.02em;margin-top:26px;
+    border-bottom:3px solid transparent;transition:color .3s,border-color .3s;
+  }
+  #contact a.big:hover{color:var(--red);border-color:var(--red)}
+  .contact-row{display:flex;gap:56px;margin-top:60px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--grey)}
+  .contact-row a{transition:color .3s}
+  .contact-row a:hover{color:var(--red)}
+
+  footer{
+    padding:38px clamp(20px,4vw,56px);border-top:3px solid var(--ink);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--grey);
+  }
+
+  #scene,#studio-canvas{opacity:0;transition:opacity 1.6s ease}
+  #scene.ready,#studio-canvas.ready{opacity:1}
+
+  :focus-visible{outline:2px solid var(--red);outline-offset:4px}
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+  @media (max-width:820px){
+    .menu{gap:18px;font-size:11px}
+    #studio{grid-template-columns:1fr}
+    .project{grid-template-columns:56px 1fr;grid-template-rows:auto auto}
+    .project .cat{grid-column:2}
+    #preview{display:none}
+    .hero-meta{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="wordmark" href="#hero">Jamil<i>la</i></a>
+  <nav class="menu">
+    <a href="#work">Work</a>
+    <a href="#studio">Studio</a>
+    <a href="#contact">Contact</a>
+  </nav>
+</header>
+
+<!-- ============ HERO — rotating showcase ============ -->
+<div id="hero">
+  <canvas id="scene"></canvas>
+  <div class="hero-copy">
+    <div class="hero-rule"></div>
+    <h1>Photography of structures<br><em>and the lives between them.</em></h1>
+  </div>
+  <div class="hero-meta">
+    NOW SHOWING — <span id="stage-label">THE RESIDENCE</span><br>
+    TAP OR SWIPE TO TURN<br>
+    ARCHITECTURE / STREET — EST. MMXXVI
+  </div>
+  <div class="scroll-hint">SCROLL</div>
+</div>
+
+<!-- ============ WORK ============ -->
+<section id="work">
+  <div class="eyebrow reveal"><b>01</b> Selected work</div>
+  <div id="project-list"></div>
+</section>
+
+<div id="preview"><img alt=""></div>
+
+<!-- ============ STUDIO — capiz window ============ -->
+<section id="studio">
+  <div class="reveal"><canvas id="studio-canvas"></canvas></div>
+  <div>
+    <div class="eyebrow reveal"><b>02</b> The studio</div>
+    <p class="reveal">Jamilla works at the meeting point of built form and street life. Architecture is approached as something organic — structure, light, wood and landscape belonging to one another, the way a capiz window turns hard sun into something soft enough to live with.</p>
+    <p class="reveal">Everything is shot on a single fixed lens. Constraint sharpens the eye.</p>
+    <div class="studio-stats reveal">
+      <div><span>12</span><small>Cities</small></div>
+      <div><span>08</span><small>Years</small></div>
+      <div><span>03</span><small>Exhibitions</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section id="contact">
+  <div class="eyebrow reveal"><b>03</b> Start a conversation</div>
+  <a class="big reveal" href="mailto:hello@jamilla.photo">hello@jamilla.photo</a>
+  <div class="contact-row reveal">
+    <a href="#">INSTAGRAM ↗</a>
+    <a href="#">PRINT SHOP ↗</a>
+    <a href="#">PRESS KIT ↗</a>
+  </div>
+</section>
+
+<footer>
+  <div>JAMILLA — ARCHITECTURE &amp; STREET</div>
+  <div>© 2026 ALL RIGHTS RESERVED</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =================================================================
+   TEXTURES — painted on canvas, no files needed
+================================================================= */
+// warm wood planks with grain
+function woodTexture(base = '#7A5C42', dark = '#64492F', vertical = false, repeat = 2) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = base;
+  g.fillRect(0, 0, 128, 128);
+  g.strokeStyle = dark;
+  for (let i = 0; i < 128; i += 16) {           // plank seams
+    g.lineWidth = 1.6;
+    g.beginPath();
+    vertical ? (g.moveTo(i, 0), g.lineTo(i, 128)) : (g.moveTo(0, i), g.lineTo(128, i));
+    g.stroke();
+  }
+  g.lineWidth = .7;
+  g.globalAlpha = .35;
+  for (let i = 0; i < 30; i++) {                // grain
+    g.beginPath();
+    const p = Math.random() * 128, q = Math.random() * 128;
+    vertical ? (g.moveTo(p, q), g.bezierCurveTo(p + 2, q + 20, p - 2, q + 40, p + 1, q + 60))
+             : (g.moveTo(q, p), g.bezierCurveTo(q + 20, p + 2, q + 40, p - 2, q + 60, p + 1));
+    g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repeat, repeat);
+  return tex;
+}
+
+// amakan — the woven bamboo herringbone of Filipino homes
+function amakanTexture(repeat = 3) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const t1 = '#C8A36B', t2 = '#A87F4C';
+  const s = 16;
+  for (let x = 0; x < 8; x++)
+    for (let y = 0; y < 8; y++) {
+      g.fillStyle = (x + y) % 2 ? t1 : t2;
+      g.fillRect(x * s, y * s, s, s);
+      g.strokeStyle = 'rgba(70,50,30,.4)';
+      g.lineWidth = 1.2;
+      // diagonal weave strokes, alternating direction
+      for (let i = 2; i < s; i += 4) {
+        g.beginPath();
+        if ((x + y) % 2) { g.moveTo(x * s + i, y * s); g.lineTo(x * s, y * s + i); }
+        else { g.moveTo(x * s + s - i, y * s); g.lineTo(x * s + s, y * s + i); }
+        g.stroke();
+      }
+    }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repeat, repeat);
+  return tex;
+}
+
+// horizontal ledge-stone coursing
+function stoneTexture(base, band, repeatY = 2) {
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = base;
+  g.fillRect(0, 0, 128, 128);
+  g.fillStyle = band;
+  for (let y = 0; y < 128; y += 10) {
+    const off = (y / 10) % 2 ? 14 : 0;
+    for (let x = -14; x < 128; x += 34) g.fillRect(x + off, y, 30, 7);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, repeatY);
+  return tex;
+}
+
+// café blade-sign with painted lettering
+function signTexture(text) {
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#9C3E2E';
+  g.fillRect(0, 0, 128, 256);
+  g.fillStyle = '#F2EDE3';
+  g.font = '600 54px Josefin Sans, sans-serif';
+  g.textAlign = 'center';
+  g.save();
+  g.translate(64, 128);
+  g.rotate(-Math.PI / 2);
+  g.fillText(text, 0, 18);
+  g.restore();
+  return new THREE.CanvasTexture(c);
+}
+
+function fit(rend, cam, cnv) {
+  const w = cnv.clientWidth, h = cnv.clientHeight;
+  if (cnv.width !== w || cnv.height !== h) {
+    rend.setSize(w, h, false);
+    cam.aspect = w / h;
+    cam.updateProjectionMatrix();
+  }
+}
+
+/* =================================================================
+   SHARED MATERIALS
+================================================================= */
+const creamMat  = new THREE.MeshStandardMaterial({color: 0xE8DFCB, roughness: .9});
+const glassMat  = new THREE.MeshStandardMaterial({color: 0x3A4440, roughness: .15, metalness: .3});
+const redMat    = new THREE.MeshStandardMaterial({color: 0x9C3E2E, roughness: .7});
+const ochreMat  = new THREE.MeshStandardMaterial({color: 0xC8923B, roughness: .8});
+const woodMat   = new THREE.MeshStandardMaterial({map: woodTexture(), roughness: .85});
+const woodVert  = new THREE.MeshStandardMaterial({map: woodTexture('#7A5C42', '#64492F', true), roughness: .85});
+const darkWood  = new THREE.MeshStandardMaterial({map: woodTexture('#5A4330', '#46331F'), roughness: .9});
+const amakanMat = new THREE.MeshStandardMaterial({map: amakanTexture(), roughness: 1});
+const stoneMat  = new THREE.MeshStandardMaterial({map: stoneTexture('#9A917C', '#857C68', 3), roughness: 1});
+const leafMat   = new THREE.MeshStandardMaterial({color: 0x6E6F4C, roughness: 1, flatShading: true});
+
+/* =================================================================
+   SMALL PIECES — figures, trees, palms, planters
+================================================================= */
+function figure(x, z, hex, height = .42, rotY = 0) {
+  const grp = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({color: hex, roughness: .85});
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(.05, .065, height, 8), mat);
+  b.position.y = height / 2;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.055, 10, 10), mat);
+  head.position.y = height + .06;
+  grp.add(b, head);
+  grp.position.set(x, 0, z);
+  grp.rotation.y = rotY;
+  return grp;
+}
+
+function tree(x, z, s = 1, autumn = false) {
+  const grp = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.06 * s, .1 * s, 1.1 * s, 6),
+    new THREE.MeshStandardMaterial({color: 0x5C4A38, roughness: 1}));
+  trunk.position.y = .55 * s;
+  grp.add(trunk);
+  const col = autumn ? [0xC8923B, 0xA86A2F, 0x9C3E2E] : [0x6E6F4C, 0x7C7D55, 0x5E6040];
+  [[0, 1.25, 0, .55], [.3, 1.0, .15, .4], [-.28, 1.05, -.1, .38], [.05, 1.55, -.08, .35]]
+    .forEach(([bx, by, bz, r], i) => {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(r * s, 8, 6),
+        new THREE.MeshStandardMaterial({color: col[i % 3], roughness: 1, flatShading: true}));
+      b.scale.y = .72;
+      b.position.set(bx * s, by * s, bz * s);
+      grp.add(b);
+    });
+  grp.position.set(x, 0, z);
+  return grp;
+}
+
+function palm(x, z, s = 1) {
+  const grp = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.05 * s, .09 * s, 1.6 * s, 7),
+    new THREE.MeshStandardMaterial({color: 0x8A7355, roughness: 1}));
+  trunk.position.y = .8 * s;
+  trunk.rotation.z = .08;
+  grp.add(trunk);
+  for (let i = 0; i < 7; i++) {                  // arching fronds
+    const frond = new THREE.Mesh(new THREE.PlaneGeometry(.13 * s, 1.0 * s), leafMat);
+    frond.material = new THREE.MeshStandardMaterial({color: 0x6E6F4C, roughness: 1, side: THREE.DoubleSide});
+    const a = (i / 7) * Math.PI * 2;
+    frond.position.set(Math.cos(a) * .3 * s + .12, 1.55 * s, Math.sin(a) * .3 * s);
+    frond.rotation.set(Math.PI / 2.6 * Math.sin(a), a, Math.PI / 2.6 * Math.cos(a));
+    grp.add(frond);
+  }
+  grp.position.set(x, 0, z);
+  return grp;
+}
+
+function shrubPot(x, z, s = 1) {
+  const grp = new THREE.Group();
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(.1 * s, .08 * s, .14 * s, 10),
+    new THREE.MeshStandardMaterial({color: 0xB06A4A, roughness: .9}));
+  pot.position.y = .07 * s;
+  const bush = new THREE.Mesh(new THREE.SphereGeometry(.13 * s, 8, 6), leafMat);
+  bush.position.y = .22 * s;
+  grp.add(pot, bush);
+  grp.position.set(x, 0, z);
+  return grp;
+}
+
+/* =================================================================
+   THE THREE BUILDINGS
+   Each sits on its own ground, arranged on a turntable that
+   rotates a new one to face the camera every few seconds.
+================================================================= */
+
+/* ---- 1. THE RESIDENCE — modern home on stilts, amakan walls,
+        deep wood roof, garden with pond and palms ---- */
+function buildResidence() {
+  const grp = new THREE.Group();
+
+  // garden ground
+  const lawn = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.5, .14, 36),
+    new THREE.MeshStandardMaterial({color: 0x7C7D55, roughness: 1}));
+  lawn.position.y = .07;
+  grp.add(lawn);
+
+  // stilts — the house lifted off the ground, silong below
+  for (let i = -2; i <= 2; i++) {
+    [-.7, .7].forEach(z => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(.05, .06, .7, 8), darkWood);
+      post.position.set(i * .55, .49, z);
+      grp.add(post);
+    });
+  }
+
+  // main volume in woven amakan, wood floor band
+  const floorBand = new THREE.Mesh(new THREE.BoxGeometry(2.9, .14, 1.8), woodMat);
+  floorBand.position.y = .9;
+  grp.add(floorBand);
+  const volume = new THREE.Mesh(new THREE.BoxGeometry(2.7, 1.05, 1.6), amakanMat);
+  volume.position.y = 1.5;
+  grp.add(volume);
+
+  // wide glass band with red mullions across the front
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(1.9, .6, .1), glassMat);
+  glass.position.set(-.2, 1.45, .78);
+  grp.add(glass);
+  for (let i = 0; i <= 4; i++) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(.03, .6, .03), redMat);
+    m.position.set(-.2 - .95 + (1.9 / 4) * i, 1.45, .86);
+    grp.add(m);
+  }
+
+  // deep single-pitch wood roof, generous overhangs
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(3.6, .1, 2.5), darkWood);
+  roof.position.y = 2.18;
+  roof.rotation.z = .07;
+  grp.add(roof);
+
+  // wood stair down to the garden
+  for (let i = 0; i < 4; i++) {
+    const step = new THREE.Mesh(new THREE.BoxGeometry(.55, .07, .24), woodMat);
+    step.position.set(1.15, .82 - i * .2, .95 + i * .24);
+    grp.add(step);
+  }
+
+  // pond with low stone edge
+  const pond = new THREE.Mesh(new THREE.CylinderGeometry(.85, .85, .06, 24),
+    new THREE.MeshStandardMaterial({color: 0x5E7B6E, roughness: .25, metalness: .1, transparent: true, opacity: .92}));
+  pond.position.set(-2.0, .17, 1.1);
+  grp.add(pond);
+  const edge = new THREE.Mesh(new THREE.TorusGeometry(.88, .06, 8, 24), stoneMat);
+  edge.rotation.x = Math.PI / 2;
+  edge.position.set(-2.0, .17, 1.1);
+  grp.add(edge);
+
+  // greenery + people
+  grp.add(palm(2.6, -.6, 1.05), palm(-2.7, -1.0, .9), tree(2.3, 1.9, .8));
+  grp.add(shrubPot(.4, 1.3), shrubPot(-1.0, 1.5, .8));
+  grp.add(figure(-1.3, 1.9, 0x2E2A24), figure(-1.05, 2.0, 0x9C3E2E, .36));
+  return grp;
+}
+
+/* ---- 2. THE APARTMENT — mid-rise with wood-slat balconies,
+        planters on every level, rooftop garden ---- */
+function buildApartment() {
+  const grp = new THREE.Group();
+
+  const plinthA = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.1, .14, 36), stoneMat);
+  plinthA.position.y = .07;
+  grp.add(plinthA);
+
+  // body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 3.6, 1.7), creamMat);
+  body.position.y = 1.94;
+  grp.add(body);
+
+  // ground floor — recessed wood lobby with red door
+  const lobby = new THREE.Mesh(new THREE.BoxGeometry(2.2, .72, 1.74), woodVert);
+  lobby.position.y = .5;
+  grp.add(lobby);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(.4, .56, .05), redMat);
+  door.position.set(0, .45, .89);
+  grp.add(door);
+
+  // four floors of balconies: wood slab, slat parapet, glass behind, planter
+  for (let f = 0; f < 4; f++) {
+    const y = 1.18 + f * .72;
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(2.5, .07, .5), woodMat);
+    slab.position.set(0, y, 1.0);
+    grp.add(slab);
+    const parapet = new THREE.Mesh(new THREE.BoxGeometry(2.5, .26, .04), woodVert);
+    parapet.position.set(0, y + .16, 1.24);
+    grp.add(parapet);
+    const g = new THREE.Mesh(new THREE.BoxGeometry(2.0, .5, .06), glassMat);
+    g.position.set(0, y + .32, .88);
+    grp.add(g);
+    [-.85, 0, .85].forEach(x => {                // red mullions
+      const m = new THREE.Mesh(new THREE.BoxGeometry(.03, .5, .03), redMat);
+      m.position.set(x, y + .32, .93);
+      grp.add(m);
+    });
+    const planter = new THREE.Mesh(new THREE.BoxGeometry(.6, .12, .14), ochreMat);
+    planter.position.set(.85, y + .1, 1.1);
+    grp.add(planter);
+    const green = new THREE.Mesh(new THREE.SphereGeometry(.1, 8, 6), leafMat);
+    green.scale.set(2.6, .9, 1);
+    green.position.set(.85, y + .2, 1.1);
+    grp.add(green);
+  }
+
+  // side walls carry the woven texture — soft, not concrete
+  const sideL = new THREE.Mesh(new THREE.BoxGeometry(.06, 3.6, 1.7), amakanMat);
+  sideL.position.set(-1.13, 1.94, 0);
+  const sideR = sideL.clone();
+  sideR.position.x = 1.13;
+  grp.add(sideL, sideR);
+
+  // rooftop garden behind a wood parapet
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(2.4, .12, 1.9), darkWood);
+  cap.position.y = 3.8;
+  grp.add(cap);
+  [[-.6, 0], [.3, .3], [.7, -.4]].forEach(([x, z]) => {
+    const bush = new THREE.Mesh(new THREE.SphereGeometry(.16, 8, 6), leafMat);
+    bush.position.set(x, 3.95, z);
+    grp.add(bush);
+  });
+
+  grp.add(tree(-2.2, .9, .85, true), shrubPot(1.5, 1.6), shrubPot(-1.5, 1.7, .85));
+  grp.add(figure(.7, 1.9, 0x6E6F4C), figure(-.8, 2.1, 0xC8923B, .4));
+  return grp;
+}
+
+/* ---- 3. THE STOREFRONT — a corner kape, slatted wood fascia,
+        glass front, awning, bench and hanging greens ---- */
+function buildStorefront() {
+  const grp = new THREE.Group();
+
+  const pave = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.1, .14, 36),
+    new THREE.MeshStandardMaterial({color: 0xCDC4B0, roughness: 1}));
+  pave.position.y = .07;
+  grp.add(pave);
+
+  // single-storey volume
+  const shell = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.5, 1.8), creamMat);
+  shell.position.y = .89;
+  grp.add(shell);
+
+  // vertical wood-slat fascia band above the glazing
+  const fascia = new THREE.Mesh(new THREE.BoxGeometry(3.04, .5, 1.84), woodVert);
+  fascia.position.y = 1.42;
+  grp.add(fascia);
+
+  // full-height glass front with red mullions and door
+  const front = new THREE.Mesh(new THREE.BoxGeometry(2.6, .9, .08), glassMat);
+  front.position.set(0, .6, .92);
+  grp.add(front);
+  for (let i = 0; i <= 5; i++) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(.035, .9, .035), redMat);
+    m.position.set(-1.3 + (2.6 / 5) * i, .6, .99);
+    grp.add(m);
+  }
+  const shopDoor = new THREE.Mesh(new THREE.BoxGeometry(.42, .82, .05), woodMat);
+  shopDoor.position.set(.78, .56, .97);
+  grp.add(shopDoor);
+
+  // ochre canvas awning over the window
+  const awning = new THREE.Mesh(new THREE.BoxGeometry(2.0, .04, .6), ochreMat);
+  awning.position.set(-.35, 1.16, 1.22);
+  awning.rotation.x = .35;
+  grp.add(awning);
+
+  // blade sign: KAPE
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(.1, .8, .26),
+    [redMat, redMat, redMat, redMat,
+     new THREE.MeshStandardMaterial({map: signTexture('KAPE')}),
+     new THREE.MeshStandardMaterial({map: signTexture('KAPE')})]);
+  sign.position.set(-1.58, 1.35, 1.0);
+  grp.add(sign);
+
+  // bench, pots, hanging plants under the soffit
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(.9, .08, .3), woodMat);
+  bench.position.set(-.7, .3, 1.45);
+  grp.add(bench);
+  [[-.25, .26], [-1.15, .26]].forEach(([x, y]) => {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(.06, .22, .26), darkWood);
+    leg.position.set(x, .19, 1.45);
+    grp.add(leg);
+  });
+  grp.add(shrubPot(1.35, 1.4), shrubPot(-1.85, 1.3, .85));
+  [[-.9, 1.18], [.1, 1.18]].forEach(([x, z]) => {
+    const hang = new THREE.Mesh(new THREE.SphereGeometry(.11, 8, 6), leafMat);
+    hang.scale.y = 1.4;
+    hang.position.set(x, 1.12, z);
+    grp.add(hang);
+  });
+
+  grp.add(figure(1.5, 1.8, 0x2E2A24, .42, .6), figure(-.55, 1.75, 0x9C3E2E, .38));
+  grp.add(palm(2.4, -.8, .9));
+  return grp;
+}
+
+/* =================================================================
+   HERO SCENE — terrain, turntable, the three buildings
+================================================================= */
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.setClearColor(0xF2EDE3, 1);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xF2EDE3, 12, 40);
+
+const camera = new THREE.PerspectiveCamera(40, 1, .1, 100);
+camera.position.set(0, 2.6, 12);
+
+scene.add(new THREE.AmbientLight(0xFFF6E8, .75));
+const sun = new THREE.DirectionalLight(0xFFEFD2, .95);
+sun.position.set(6, 9, 4);
+scene.add(sun);
+
+// rolling terrain, flat where the turntable sits
+const terrainGeo = new THREE.PlaneGeometry(48, 48, 64, 64);
+const tPos = terrainGeo.attributes.position;
+for (let i = 0; i < tPos.count; i++) {
+  const x = tPos.getX(i), y = tPos.getY(i);
+  const dist = Math.hypot(x, y);
+  const rise = Math.max(0, (dist - 9) / 9);
+  tPos.setZ(i, (Math.sin(x * .3) * Math.cos(y * .25) * .9 + Math.sin(x * .8 + y * .5) * .3) * rise);
+}
+terrainGeo.computeVertexNormals();
+const terrain = new THREE.Mesh(terrainGeo,
+  new THREE.MeshStandardMaterial({color: 0xA8A584, roughness: 1, flatShading: true}));
+terrain.rotation.x = -Math.PI / 2;
+terrain.position.y = -.32;
+scene.add(terrain);
+
+// the turntable — a wide wooden platform, like a maker's worktable
+const table = new THREE.Mesh(new THREE.CylinderGeometry(8.2, 8.4, .3, 56), woodMat);
+table.position.y = -.15;
+scene.add(table);
+
+// the three buildings at 120° intervals; index 0 faces the camera
+const stage = new THREE.Group();
+const RADIUS = 4.6;
+const builders = [buildResidence, buildApartment, buildStorefront];
+builders.forEach((build, i) => {
+  const b = build();
+  const a = i * (Math.PI * 2 / 3);
+  b.position.set(Math.sin(a) * RADIUS, 0, Math.cos(a) * RADIUS);
+  b.rotation.y = a;            // each faces outward, toward the camera when front
+  stage.add(b);
+});
+scene.add(stage);
+
+// trees on the surrounding hills
+[[-7.5, -4, 1.4, false], [8, -3, 1.5, true], [-9, 2, 1.2, true], [9.5, 3, 1.3, false],
+ [-6, -7, 1.1, false], [6.5, -7.5, 1.2, true]]
+  .forEach(([x, z, s, a]) => {
+    const tr = tree(x, z, s, a);
+    tr.position.y = -.3;
+    scene.add(tr);
+  });
+
+// drifting leaves
+const leaves = [];
+const leafGeo = new THREE.PlaneGeometry(.08, .06);
+const leafCols = [0xC8923B, 0x9C3E2E, 0xA86A2F];
+for (let i = 0; i < 26; i++) {
+  const leaf = new THREE.Mesh(leafGeo,
+    new THREE.MeshBasicMaterial({color: leafCols[i % 3], side: THREE.DoubleSide, transparent: true, opacity: .85}));
+  leaf.position.set((Math.random() - .5) * 14, Math.random() * 4 + .5, (Math.random() - .5) * 10);
+  leaf.userData = {fall: .12 + Math.random() * .18, sway: Math.random() * Math.PI * 2, spin: (Math.random() - .5) * 1.6};
+  leaves.push(leaf);
+  scene.add(leaf);
+}
+
+/* ---- the rotation: a new building turns to face you ---- */
+const labels = ['THE RESIDENCE', 'THE APARTMENT', 'THE STOREFRONT'];
+const labelEl = document.getElementById('stage-label');
+let stageIndex = 0, targetAngle = 0;
+const STEP = -(Math.PI * 2 / 3);     // turn so the next building arrives at the front
+
+function goTo(delta) {
+  stageIndex = (stageIndex + delta + 3) % 3;
+  targetAngle += STEP * delta;
+  labelEl.classList.add('fading');
+  setTimeout(() => {
+    labelEl.textContent = labels[stageIndex];
+    labelEl.classList.remove('fading');
+  }, 600);
+}
+
+// auto-advance, restarted whenever the visitor takes over
+let autoTimer;
+function startAuto() {
+  clearInterval(autoTimer);
+  autoTimer = setInterval(() => goTo(1), 9000);
+}
+startAuto();
+
+// click to advance; swipe left/right to turn either way
+// (vertical swipes still scroll the page — touch-action handles that)
+let pX = 0, pY = 0, pT = 0;
+canvas.addEventListener('pointerdown', e => {
+  pX = e.clientX; pY = e.clientY; pT = Date.now();
+});
+canvas.addEventListener('pointerup', e => {
+  const dx = e.clientX - pX, dy = e.clientY - pY;
+  if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+    goTo(dx < 0 ? 1 : -1);              // swipe left = next, right = previous
+    startAuto();
+  } else if (Math.hypot(dx, dy) < 8 && Date.now() - pT < 400) {
+    goTo(1);                            // a simple tap advances
+    startAuto();
+  }
+});
+
+/* ---- interaction & loop ---- */
+let mouseX = 0, mouseY = 0, scrollY = 0;
+addEventListener('mousemove', e => {
+  mouseX = (e.clientX / innerWidth - .5) * 2;
+  mouseY = (e.clientY / innerHeight - .5) * 2;
+});
+addEventListener('scroll', () => scrollY = window.scrollY);
+
+const clock = new THREE.Clock();
+function animateHero() {
+  fit(renderer, camera, canvas);
+  const t = clock.getElapsedTime();
+
+  // ease the turntable toward its target
+  stage.rotation.y += (targetAngle - stage.rotation.y) * .035;
+  table.rotation.y = stage.rotation.y;
+
+  // leaves drift down
+  leaves.forEach(l => {
+    l.position.y -= l.userData.fall * .016;
+    l.position.x += Math.sin(t + l.userData.sway) * .003;
+    l.rotation.x += l.userData.spin * .01;
+    l.rotation.z += l.userData.spin * .008;
+    if (l.position.y < -.3) {
+      l.position.y = 4;
+      l.position.x = (Math.random() - .5) * 14;
+      l.position.z = (Math.random() - .5) * 10;
+    }
+  });
+
+  // mouse parallax + scroll lift
+  const lift = Math.min(scrollY / innerHeight, 1);
+  camera.position.x += (mouseX * 1.4 - camera.position.x) * .04;
+  camera.position.y += (2.6 - mouseY * .7 + lift * 4.5 - camera.position.y) * .04;
+  camera.lookAt(0, 1.2 - lift * 1.8, RADIUS * .55);
+
+  renderer.render(scene, camera);
+  canvas.classList.add('ready');
+  requestAnimationFrame(animateHero);
+}
+animateHero();
+
+/* =================================================================
+   STUDIO — a capiz-shell window: wooden lattice, pearl panes,
+   with a lower rail of balusters, turning in passing light.
+================================================================= */
+const sCanvas = document.getElementById('studio-canvas');
+const sRenderer = new THREE.WebGLRenderer({canvas: sCanvas, antialias: true});
+sRenderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+sRenderer.setClearColor(0xF2EDE3, 1);
+const sScene = new THREE.Scene();
+const sCamera = new THREE.PerspectiveCamera(36, 1, .1, 60);
+sCamera.position.set(0, 0, 9);
+
+sScene.add(new THREE.AmbientLight(0xFFF6E8, .8));
+const backlight = new THREE.PointLight(0xFFEAC2, 1.1, 30);
+backlight.position.set(2, 1.5, -4);
+sScene.add(backlight);
+
+const panel = new THREE.Group();
+const frameMat = new THREE.MeshStandardMaterial({map: woodTexture('#6B4F37', '#553D27'), roughness: .8});
+
+let paneLayer = 0;
+function pane(w, h, x, y, hex, opacity) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+    new THREE.MeshStandardMaterial({
+      color: hex, transparent: true, opacity,
+      side: THREE.DoubleSide, roughness: .35, depthWrite: false,
+    }));
+  paneLayer++;
+  m.position.set(x, y, paneLayer * .012);
+  m.renderOrder = paneLayer;
+  panel.add(m);
+}
+function bar(w, h, x, y, depth = .08) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, depth), frameMat);
+  m.position.set(x, y, 0);
+  panel.add(m);
+}
+
+/* outer frame */
+bar(.16, 6.6, -2.3, 0); bar(.16, 6.6, 2.3, 0);
+bar(4.76, .16, 0, 3.3); bar(4.76, .16, 0, -3.3);
+/* transom rail dividing capiz field from the ventanilla below */
+bar(4.5, .14, 0, -1.7);
+
+/* capiz field: a wooden lattice of small pearl squares */
+const COLS = 7, ROWS = 6;
+const fw = 4.4, fh = 4.7, ox = -fw / 2, oy = -1.55;
+for (let i = 1; i < COLS; i++) bar(.06, fh, ox + (fw / COLS) * i, oy + fh / 2 + .1);
+for (let j = 1; j < ROWS; j++) bar(fw, .06, 0, oy + .1 + (fh / ROWS) * j);
+for (let i = 0; i < COLS; i++)
+  for (let j = 0; j < ROWS; j++) {
+    const cx = ox + (fw / COLS) * (i + .5);
+    const cy = oy + .1 + (fh / ROWS) * (j + .5);
+    // mother-of-pearl shimmer: warm whites with the odd blush
+    const tones = [0xF2E8D8, 0xEFE3CE, 0xF5EDE0, 0xEDDFC6];
+    pane(fw / COLS - .1, fh / ROWS - .1, cx, cy, tones[(i * 3 + j) % 4], .5);
+  }
+
+/* a quiet accent: one terracotta pane and one ochre, like patched shells */
+pane(fw / COLS - .1, fh / ROWS - .1, ox + (fw / COLS) * 1.5, oy + .1 + (fh / ROWS) * 4.5, 0x9C3E2E, .8);
+pane(fw / COLS - .1, fh / ROWS - .1, ox + (fw / COLS) * 5.5, oy + .1 + (fh / ROWS) * 1.5, 0xC8923B, .8);
+
+/* ventanilla — the low breathing slot with turned balusters */
+for (let i = 0; i < 9; i++) {
+  const bal = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, 1.3, 8), frameMat);
+  bal.position.set(-2.0 + i * .5, -2.5, 0);
+  panel.add(bal);
+}
+
+panel.scale.setScalar(.82);
+sScene.add(panel);
+
+let sMouseX = 0, sMouseY = 0;
+sCanvas.addEventListener('mousemove', e => {
+  const r = sCanvas.getBoundingClientRect();
+  sMouseX = ((e.clientX - r.left) / r.width - .5) * 2;
+  sMouseY = ((e.clientY - r.top) / r.height - .5) * 2;
+});
+
+const sClock = new THREE.Clock();
+function animateStudio() {
+  fit(sRenderer, sCamera, sCanvas);
+  const t = sClock.getElapsedTime();
+
+  panel.rotation.y = Math.sin(t * .22) * .42 + sMouseX * .25;
+  panel.rotation.x = sMouseY * .1;
+  backlight.position.x = Math.sin(t * .35) * 3;   // afternoon light passing behind
+
+  sRenderer.render(sScene, sCamera);
+  sCanvas.classList.add('ready');
+  requestAnimationFrame(animateStudio);
+}
+animateStudio();
+
+/* =================================================================
+   PROJECT LIST + cursor preview
+================================================================= */
+const projects = [
+  {no:'001', title:'Concrete Hymn',   cat:'Architecture', seed:'arch-cover'},
+  {no:'002', title:'Last Train',      cat:'Street',       seed:'street-3'},
+  {no:'003', title:'Glass & Grid',    cat:'Architecture', seed:'architecture-3'},
+  {no:'004', title:'Crossing',        cat:'Street',       seed:'street-0'},
+  {no:'005', title:'Brutal Light',    cat:'Architecture', seed:'architecture-4'},
+  {no:'006', title:'After Rain',      cat:'Street',       seed:'street-11'},
+  {no:'007', title:'Vertical City',   cat:'Architecture', seed:'architecture-10'},
+];
+
+const list = document.getElementById('project-list');
+const preview = document.getElementById('preview');
+const previewImg = preview.querySelector('img');
+
+projects.forEach(p => {
+  const row = document.createElement('div');
+  row.className = 'project reveal';
+  row.innerHTML = `<span class="no">${p.no}</span><h3>${p.title}</h3><span class="cat">${p.cat}</span>`;
+  row.addEventListener('mouseenter', () => {
+    previewImg.src = `https://picsum.photos/seed/${p.seed}/600/450`;
+    preview.classList.add('on');
+  });
+  row.addEventListener('mouseleave', () => preview.classList.remove('on'));
+  list.appendChild(row);
+});
+
+addEventListener('mousemove', e => {
+  preview.style.left = (e.clientX + 28) + 'px';
+  preview.style.top  = (e.clientY - 100) + 'px';
+});
+
+/* ---------- Scroll reveals ---------- */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(en => en.isIntersecting && en.target.classList.add('in'));
+}, {threshold: .15});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>
